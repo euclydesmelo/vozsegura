@@ -18,7 +18,7 @@ export async function getAdminContext(slug: string) {
 
   const { data: tenantUser } = await supabase
     .from("tenant_users")
-    .select("id, role, nome")
+    .select("id, role, nome, deve_trocar_senha")
     .eq("tenant_id", tenant.id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -33,6 +33,7 @@ export async function getAdminContext(slug: string) {
     role: tenantUser.role as TenantRole,
     tenantUserId: tenantUser.id,
     nome: tenantUser.nome as string | null,
+    deveTrocarSenha: tenantUser.deve_trocar_senha as boolean,
   };
 }
 

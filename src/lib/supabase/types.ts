@@ -92,6 +92,7 @@ export interface TenantUser {
   user_id: string;
   role: TenantRole;
   nome: string | null;
+  deve_trocar_senha: boolean;
   created_at: string;
 }
 

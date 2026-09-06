@@ -6,14 +6,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminContext, requireRole } from "@/lib/admin";
 import { getBaseUrl } from "@/lib/email";
+import { gerarSenhaTemporaria } from "@/lib/senha";
 import type { TenantRole } from "@/lib/supabase/types";
 
-export type MembroState = { message?: string; error?: boolean };
+export type MembroState = { message?: string; error?: boolean; senhaTemporaria?: string };
 
 const convidarSchema = z.object({
   nome: z.string().trim().min(1, "Informe o nome."),
   email: z.string().trim().email("E-mail inválido."),
   role: z.enum(["admin", "comite", "leitor"]),
+  modo: z.enum(["convite", "senha_temporaria"]),
 });
 
 export async function convidarMembro(
@@ -29,27 +31,47 @@ export async function convidarMembro(
   if (!parsed.success) {
     return { message: parsed.error.issues[0]?.message ?? "Dados inválidos.", error: true };
   }
-  const { nome, email, role } = parsed.data;
+  const { nome, email, role, modo } = parsed.data;
 
   const supabase = await createClient();
   const { data: existenteId } = await supabase.rpc("buscar_user_id_por_email", { p_email: email });
 
+  const jaExistia = !!existenteId;
   let userId = existenteId as string | null;
+  let senhaTemporaria: string | undefined;
 
   if (!userId) {
     const service = createServiceClient();
-    const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${getBaseUrl()}/${tenantSlug}/admin/confirmar`,
-    });
-    if (error || !data.user) {
-      return { message: `Não foi possível convidar: ${error?.message ?? "erro desconhecido"}`, error: true };
+
+    if (modo === "senha_temporaria") {
+      senhaTemporaria = gerarSenhaTemporaria();
+      const { data, error } = await service.auth.admin.createUser({
+        email,
+        password: senhaTemporaria,
+        email_confirm: true,
+      });
+      if (error || !data.user) {
+        return { message: `Não foi possível criar o usuário: ${error?.message ?? "erro desconhecido"}`, error: true };
+      }
+      userId = data.user.id;
+    } else {
+      const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
+        redirectTo: `${getBaseUrl()}/${tenantSlug}/admin/confirmar`,
+      });
+      if (error || !data.user) {
+        return { message: `Não foi possível convidar: ${error?.message ?? "erro desconhecido"}`, error: true };
+      }
+      userId = data.user.id;
     }
-    userId = data.user.id;
   }
 
-  const { error: insertError } = await supabase
-    .from("tenant_users")
-    .insert({ tenant_id: tenantId, user_id: userId, role, nome });
+  const { error: insertError } = await supabase.from("tenant_users").insert({
+    tenant_id: tenantId,
+    user_id: userId,
+    role,
+    nome,
+    deve_trocar_senha: !!senhaTemporaria,
+  });
 
   if (insertError) {
     return {
@@ -59,6 +81,16 @@ export async function convidarMembro(
   }
 
   revalidatePath(`/${tenantSlug}/admin/usuarios`);
+
+  if (senhaTemporaria) {
+    return {
+      message: "Usuário criado com senha temporária — copie e repasse com segurança, ela não aparece de novo.",
+      senhaTemporaria,
+    };
+  }
+  if (jaExistia) {
+    return { message: "Esse e-mail já tinha conta na plataforma — vinculado a este canal." };
+  }
   return { message: "Convite enviado." };
 }
 

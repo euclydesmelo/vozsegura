@@ -28,7 +28,17 @@ export function MembroRow({
 
   return (
     <tr className="border-t border-border">
-      <td className="px-4 py-3">{membro.nome ?? "—"}</td>
+      <td className="px-4 py-3">
+        {membro.nome ?? "—"}
+        {membro.deve_trocar_senha && (
+          <span
+            title="Ainda não trocou a senha temporária definida na criação."
+            className="ml-1.5 text-[10px] font-medium text-brass bg-brass/10 px-1.5 py-0.5 rounded"
+          >
+            senha pendente
+          </span>
+        )}
+      </td>
       <td className="px-4 py-3 text-muted">{membro.email ?? "—"}</td>
       <td className="px-4 py-3">
         <select

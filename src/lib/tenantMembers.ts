@@ -8,6 +8,7 @@ export type MembroComEmail = {
   role: TenantRole;
   nome: string | null;
   email: string | null;
+  deve_trocar_senha: boolean;
   created_at: string;
 };
 
@@ -15,7 +16,7 @@ export async function listarMembrosComEmail(tenantId: string): Promise<MembroCom
   const supabase = createServiceClient();
   const { data: membros } = await supabase
     .from("tenant_users")
-    .select("id, user_id, role, nome, created_at")
+    .select("id, user_id, role, nome, deve_trocar_senha, created_at")
     .eq("tenant_id", tenantId)
     .order("created_at");
 

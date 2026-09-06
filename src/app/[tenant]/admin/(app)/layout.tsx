@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getAdminContext } from "@/lib/admin";
 import { Tooltip } from "@/components/Info";
 import { ProfileMenu } from "./profile-menu";
@@ -19,7 +20,13 @@ export default async function AdminAppLayout({
   params: Promise<{ tenant: string }>;
 }) {
   const { tenant: slug } = await params;
-  const { tenant, role, nome, user } = await getAdminContext(slug);
+  const { tenant, role, nome, user, deveTrocarSenha } = await getAdminContext(slug);
+
+  // Quem entrou com senha temporária (definida pelo admin, sem convite por
+  // e-mail) precisa trocá-la antes de ver qualquer outra tela do painel.
+  if (deveTrocarSenha) {
+    redirect(`/${slug}/admin/trocar-senha`);
+  }
 
   const links = [
     { href: `/${slug}/admin`, label: "Casos" },
