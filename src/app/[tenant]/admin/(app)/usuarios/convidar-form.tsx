@@ -17,7 +17,7 @@ export function ConvidarForm({ tenantSlug, tenantId }: { tenantSlug: string; ten
     action,
     undefined
   );
-  const [modo, setModo] = useState<"convite" | "senha_temporaria">("convite");
+  const [modo, setModo] = useState<"convite" | "senha_temporaria">("senha_temporaria");
 
   return (
     <div className="card space-y-3">
@@ -30,19 +30,19 @@ export function ConvidarForm({ tenantSlug, tenantId }: { tenantSlug: string; ten
           <input
             type="radio"
             name="modo-ui"
-            checked={modo === "convite"}
-            onChange={() => setModo("convite")}
+            checked={modo === "senha_temporaria"}
+            onChange={() => setModo("senha_temporaria")}
           />
-          Convite por e-mail
+          Senha temporária
         </label>
         <label className="flex items-center gap-1.5">
           <input
             type="radio"
             name="modo-ui"
-            checked={modo === "senha_temporaria"}
-            onChange={() => setModo("senha_temporaria")}
+            checked={modo === "convite"}
+            onChange={() => setModo("convite")}
           />
-          Senha temporária
+          Convite por e-mail
         </label>
       </div>
 
